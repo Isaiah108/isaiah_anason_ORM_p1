@@ -5,7 +5,11 @@ import com.revature.persistence.DAO;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
+import com.revature.services.ORM_Helper;
 
 public class ORM {
     public static void makeTable(Class<?> clazz) {
@@ -24,7 +28,7 @@ public class ORM {
                 if (field.getDeclaredAnnotation(PrimaryKey.class).isSerial())
                     half2Query.append("serial");
                 else
-                    half2Query.append(convertType(field.getType()));
+                    half2Query.append(ORM_Helper.convertType(field.getType()));
                 half2Query.append(" primary key");
             }
         }
@@ -36,7 +40,7 @@ public class ORM {
             if (!fieldAnnotations.contains("PrimaryKey") && (fieldAnnotations.contains("Column") || fieldAnnotations.contains("NotNull") || fieldAnnotations.contains("Unique"))) {
                 if (half2Query.length() != 0)
                     half2Query.append(", ");
-                half2Query.append("\"").append(field.getName()).append("\" ").append(convertType(field.getType())).append(" ");
+                half2Query.append("\"").append(field.getName()).append("\" ").append(ORM_Helper.convertType(field.getType())).append(" ");
                 if (fieldAnnotations.contains("Unique"))
                     half2Query.append("Unique ");
                 if (fieldAnnotations.contains("NotNull"))
@@ -46,21 +50,36 @@ public class ORM {
 
         //finish building query String and execute it
         half2Query.append(");");
-        DAO.executeCreateTable(half1Query.toString()+half2Query.toString());
+        DAO.executeCreateTable(half1Query.toString() + half2Query.toString());
 
     }
 
     //CREATE
-    public static void addRecord(Object obj) {
-        String query = "insert into \"" + obj.getClass().getSimpleName() + "\" (";
+    public static boolean addRecord(Object obj) {
+        StringBuilder half1Query = new StringBuilder();
+        StringBuilder half2Query = new StringBuilder();
+        half1Query.append("insert into \"").append(obj.getClass().getSimpleName()).append("\" (");
 
         //loop over fields
         Field[] fields = obj.getClass().getDeclaredFields();
         for (Field field : fields) {
-            if(Arrays.toString(field.getDeclaredAnnotations()).contains("PrimaryKey")){
+            String fieldAnnotations = Arrays.toString(field.getDeclaredAnnotations());
+            //If annotation on field is one we want for columns
+            if (!fieldAnnotations.contains("PrimaryKey") && (fieldAnnotations.contains("Column") || fieldAnnotations.contains("NotNull") || fieldAnnotations.contains("Unique"))) {
+                half2Query.append("\"" + field.getName()+ "\"");
+            }
+            if(half2Query.length()!=0)
+                half2Query.append(",");
 
+
+
+            //If annotation on field is primary key and not serial
+            if (fieldAnnotations.contains("PrimaryKey") && !(field.getDeclaredAnnotation(PrimaryKey.class).isSerial())) {
+                if (!DAO.isPrimaryKeyUnique(obj))
+                    return false;
             }
         }
+        return false;
     }
 
     //READ
@@ -79,41 +98,5 @@ public class ORM {
         }
 
     }
-    public static String convertType(Type type) {
-        String inputType = type.getTypeName();
-        String outputType = null;
 
-        switch (inputType) {
-            case "char":
-            case "java.lang.Character":
-                outputType = "char";
-                break;
-            case "boolean":
-            case "java.lang.Boolean":
-                outputType = "bool";
-                break;
-            case "byte":
-            case "java.lang.Byte":
-            case "short":
-            case "java.lang.Short":
-            case "int":
-            case "java.lang.Integer":
-                outputType = "int";
-                break;
-            case "long":
-            case "java.lang.Long":
-                outputType = "bigint";
-                break;
-            case "float":
-            case "java.lang.Float":
-            case "double":
-            case "java.lang.Double":
-                outputType = "double";
-                break;
-            case "java.lang.String":
-                outputType = "text";
-                break;
-        }
-        return outputType;
-    }
 }

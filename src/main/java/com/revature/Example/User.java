@@ -18,5 +18,8 @@ public class User {
     private String firstName;
     @Column
     Integer age;
+    public void setid(int id){
+        this.id = id;
+    }
 
 }
