@@ -7,7 +7,7 @@ import com.revature.annotations.Unique;
 
 public class User {
 
-    @PrimaryKey
+    @PrimaryKey(isSerial = false)
     public int id;
     @Unique
     @NotNull

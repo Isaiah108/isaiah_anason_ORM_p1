@@ -1,8 +1,8 @@
-import com.revature.DAO.DAO;
+import com.revature.services.ORM;
 
 public class DAOTester {
     public static void testCreatingTableFromObject(){
-        DAO.makeTable(Object.class);
+        ORM.makeTable(Object.class);
 //        Assertion assertion = new Assertion();
     }
 }
