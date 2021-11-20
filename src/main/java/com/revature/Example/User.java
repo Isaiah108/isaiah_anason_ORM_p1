@@ -7,7 +7,7 @@ import com.revature.annotations.Unique;
 
 public class User {
 
-    @PrimaryKey(isSerial = false)
+    @PrimaryKey(isSerial = true)
     public int id;
     @Unique
     @NotNull
@@ -18,8 +18,44 @@ public class User {
     private String firstName;
     @Column
     Integer age;
-    public void setid(int id){
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
         this.id = id;
     }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
 }

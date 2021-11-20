@@ -5,10 +5,21 @@ import com.revature.services.ORM;
 
 public class Application {
     public static void main(String[] args) throws NoSuchFieldException {
-//        ORM.makeTable(User.class);
+
         User user = new User();
-        user.setid(5);
-        DAO.isPrimaryKeyUnique(user);
+
+        user.setId(5);
+        user.setUsername("Isaiah");
+        user.setPassword("1234");
+        ORM.makeTable(user.getClass());
+        ORM.addRecord(user);
+//        DAO.isPrimaryKeyUnique(user);
+//        ORM.addRecord(user);
+
+        System.out.println("User Password:" + user.getPassword());
+        boolean isValid = DAO.isObjectValidInsert(user);
+        System.out.println("IsValid: " + isValid);
+
 
     }
 }
