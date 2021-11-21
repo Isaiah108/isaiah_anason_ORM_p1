@@ -17,7 +17,7 @@ public class User {
     @Column
     private String firstName;
     @Column
-    Integer age;
+    int age;
 
     public int getId() {
         return id;

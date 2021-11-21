@@ -1,10 +1,13 @@
 package com.revature.services;
 
+import com.revature.persistence.DAO;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ORM_Helper {
     public static String convertType(Type type) {
@@ -52,5 +55,106 @@ public class ORM_Helper {
             }
         }
         return fieldList.toArray(new Field[0]);
+    }
+    public static boolean isClassValid(Class<?> clazz){
+        List<Field> primaryKeyFields = Arrays.stream(clazz.getDeclaredFields())
+                .filter(field -> Arrays.toString(field.getDeclaredAnnotations()).contains("PrimaryKey")).collect(Collectors.toList());
+        return primaryKeyFields.size() == 1;
+    }
+    /**
+     *
+     * @param obj object to check if valid in that its NotNull annotations are in fact not null
+     * @return whether its valid or not
+     */
+    public static boolean isObjectValid(Object obj){
+        if(!isClassValid(obj.getClass())){
+            return false;
+        }
+        //NOT NULL KEYS
+        List<Field> notNullKeyFields = Arrays.stream(obj.getClass().getDeclaredFields())
+                .filter(field -> Arrays.toString(field.getDeclaredAnnotations()).contains("NotNull")).collect(Collectors.toList());
+        if (notNullKeyFields.size() > 1) {
+            try {
+                for (Field notNullKeyField : notNullKeyFields) {
+                    notNullKeyField.setAccessible(true);
+                    if (notNullKeyField.get(obj) == null) {
+                        return false;
+                    }
+                }
+            } catch (IllegalAccessException e) {
+                System.out.println("Variable(NotNull) can't be accessed");
+                e.printStackTrace();
+            }
+        }
+        return true;
+    }
+    public static boolean isObjectValidInsert(Object potentialNewObject) {
+        if(!isObjectValid(potentialNewObject))
+            return false;
+        //PRIMARY KEY
+        List<Field> primaryKeyFields = Arrays.stream(potentialNewObject.getClass().getDeclaredFields())
+                .filter(field -> Arrays.toString(field.getDeclaredAnnotations()).contains("PrimaryKey")).collect(Collectors.toList());
+        boolean primaryKeyExists = false;
+        StringBuilder query1 = new StringBuilder();
+        if (primaryKeyFields.size() != 0) {
+            primaryKeyExists = true;
+            try {
+                primaryKeyFields.get(0).setAccessible(true);
+                query1.append("Select \"").append(primaryKeyFields.get(0).getName()).append("\" from \"").append(potentialNewObject.getClass().getSimpleName())
+                        .append("\" where \"").append(primaryKeyFields.get(0).getName()).append("\"=").append("'").append(primaryKeyFields.get(0).get(potentialNewObject)).append("'");
+            } catch (IllegalAccessException e) {
+                System.out.println("Variable(Primary) can't be accessed");
+                e.printStackTrace();
+            }
+        }
+
+        //UNIQUE KEYS
+        boolean uniqueFieldsExist = false;
+        List<Field> uniqueKeyFields = Arrays.stream(potentialNewObject.getClass().getDeclaredFields())
+                .filter(field -> Arrays.toString(field.getDeclaredAnnotations()).contains("Unique")).collect(Collectors.toList());
+        StringBuilder[] query2 = new StringBuilder[uniqueKeyFields.size()];
+        for (int i = 0; i < uniqueKeyFields.size(); i++) {
+            query2[i] = new StringBuilder();
+        }
+        if (uniqueKeyFields.size() >= 1) {
+            uniqueFieldsExist = true;
+            try {
+                for (int i = 0; i < uniqueKeyFields.size(); i++) {
+                    uniqueKeyFields.get(i).setAccessible(true);
+//                    ORM_Helper.getFieldsFromAnnotation(potentialNewObject.getClass(), "Unique")[i].setAccessible(true);
+                    query2[i].append("Select \"").append(uniqueKeyFields.get(i).getName()).append("\" from \"").append(potentialNewObject.getClass().getSimpleName())
+                            .append("\" where \"").append(uniqueKeyFields.get(i).getName()).append("\" ='")
+                            .append(uniqueKeyFields.get(i).get(potentialNewObject)).append("'");
+                }
+            } catch (IllegalAccessException e) {
+                System.out.println("Variable(Unique) can't be accessed");
+                e.printStackTrace();
+            }
+        }
+        return DAO.checkValid(primaryKeyExists,uniqueFieldsExist,query1,query2);
+    }
+    public static boolean isObjectValidUpdate(Object obj){
+        if(!isObjectValid(obj))
+            return false;
+        List<Field> primaryKeyFields = Arrays.stream(obj.getClass().getDeclaredFields())
+                .filter(field -> Arrays.toString(field.getDeclaredAnnotations()).contains("PrimaryKey")).collect(Collectors.toList());
+        StringBuilder query1 = new StringBuilder();
+        if (primaryKeyFields.size() != 0) {
+            try {
+                primaryKeyFields.get(0).setAccessible(true);
+                query1.append("Select \"").append(primaryKeyFields.get(0).getName()).append("\" from \"").append(obj.getClass().getSimpleName())
+                        .append("\" where \"").append(primaryKeyFields.get(0).getName()).append("\"=")
+                        .append(primaryKeyFields.get(0).get(obj));
+            } catch (IllegalAccessException e) {
+                System.out.println("Variable(Primary) can't be accessed");
+                e.printStackTrace();
+            }
+        }else // no primary key listed must use built in field with id name
+        {}
+
+
+
+
+        return true;
     }
 }

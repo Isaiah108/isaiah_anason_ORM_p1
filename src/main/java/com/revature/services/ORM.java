@@ -5,6 +5,7 @@ import com.revature.persistence.DAO;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,25 +15,34 @@ import com.revature.services.ORM_Helper;
 
 public class ORM {
     public static void makeTable(Class<?> clazz) {
+        if(!ORM_Helper.isClassValid(clazz))
+            return;
+
         String tableName = clazz.getSimpleName();
         StringBuilder half1Query = new StringBuilder();
         StringBuilder half2Query = new StringBuilder();
         Field[] fields = clazz.getDeclaredFields();
-        System.out.println(Arrays.toString(fields));
+        boolean containsPrimaryKey = false;
 
         half1Query.append("CREATE TABLE IF NOT EXISTS \"" + tableName + "\"(");
 
         //Checks for primary key and makes that first column
         for (Field field : fields) {
             if (Arrays.toString(field.getAnnotations()).contains("PrimaryKey")) {
+                containsPrimaryKey = true;
                 half2Query.append(field.getName() + " ");
                 if (field.getDeclaredAnnotation(PrimaryKey.class).isSerial())
                     half2Query.append("serial");
                 else
                     half2Query.append(ORM_Helper.convertType(field.getType()));
                 half2Query.append(" primary key");
+            } else {
+
             }
         }
+        if (!containsPrimaryKey)
+            half2Query.append("id serial primary key");
+
         //Check for other columns
         for (Field field : fields) {
             String fieldAnnotations = Arrays.toString(field.getAnnotations());
@@ -55,14 +65,21 @@ public class ORM {
 
     }
 
-    //CREATE
+    /**
+     *
+     * @param obj to be inserted into the database. If PrimaryKey is serial will update object automatically
+     * @return whether record could be added
+     */
     public static boolean addRecord(Object obj) {
-        if (!isObjectValidInsert(obj)) {
+        if (!ORM_Helper.isObjectValidInsert(obj)) {
             return false;
         }
         StringBuilder half1Query = new StringBuilder();
         StringBuilder half2Query = new StringBuilder();
         StringBuilder values = new StringBuilder();
+        String getSerialIDQuery = null;
+        String serialFieldName = null;
+
         values.append("values(");
         half1Query.append("insert into \"").append(obj.getClass().getSimpleName()).append("\"(");
         //loop over fields
@@ -79,7 +96,78 @@ public class ORM {
                 half2Query.append("\"").append(field.getName()).append("\"");
                 field.setAccessible(true);
                 try {
-                    values.append("\"").append(field.get(obj)).append("\"");
+                    values.append("'").append(field.get(obj)).append("'");
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            //If annotation on field is primary key and not serial
+            if (fieldAnnotations.contains("PrimaryKey")) {
+                if(!(field.getDeclaredAnnotation(PrimaryKey.class).isSerial())){
+                    if (half2Query.length() != 0) {
+                        half2Query.append(",");
+                        values.append(",");
+                    }
+                    half2Query.append("\"").append(field.getName()).append("\"");
+                    field.setAccessible(true);
+                    try {
+                        values.append("'").append(field.get(obj)).append("'");
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
+                //IF primary key field is serial
+                else{
+                    getSerialIDQuery = "select \"" + field.getName() + "\" from \"" + obj.getClass().getSimpleName()
+                            + "\" order by " +field.getName() + " asc";
+                    System.out.println("getSerialQuery: " + getSerialIDQuery);
+                    serialFieldName = field.getName();
+                }
+            }
+        }
+        String finalQuery = half1Query.toString() + half2Query.toString() + ") " + values + ")";
+        System.out.println("addRecord query: " + finalQuery);
+        int serialIDIFExists = DAO.insert(finalQuery,getSerialIDQuery);
+
+        if(serialFieldName!=null){
+            try {
+                Field serialField = obj.getClass().getDeclaredField(serialFieldName);
+                serialField.set(obj,serialIDIFExists);
+
+            }catch(NoSuchFieldException | IllegalAccessException e){
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
+    //READ
+    public static void readRecord() {
+
+    }
+
+    //UPDATE
+    public static boolean updateRecord(Object obj) {
+        if (!ORM_Helper.isObjectValid(obj)) {
+            return false;
+        }
+        StringBuilder half1Query = new StringBuilder();
+        StringBuilder half2Query = new StringBuilder();
+        half1Query.append("Update ").append(obj.getClass().getSimpleName()).append(" Set ");
+        Field[] fields = obj.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            String fieldAnnotations = Arrays.toString(field.getDeclaredAnnotations());
+
+            //If annotation on field is one we want for columns &NOT a primary field
+            if (!fieldAnnotations.contains("PrimaryKey") && (fieldAnnotations.contains("Column") || fieldAnnotations.contains("NotNull") || fieldAnnotations.contains("Unique"))) {
+                if (half2Query.length() != 0) {
+                    half2Query.append(",");
+                }
+                half2Query.append("\"").append(field.getName()).append("\"=");
+                field.setAccessible(true);
+                try {
+                    half2Query.append("'").append(field.get(obj)).append("'");
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 }
@@ -89,43 +177,18 @@ public class ORM {
             if (fieldAnnotations.contains("PrimaryKey") && !(field.getDeclaredAnnotation(PrimaryKey.class).isSerial())) {
                 if (half2Query.length() != 0) {
                     half2Query.append(",");
-                    values.append(",");
                 }
-                half2Query.append("\"").append(field.getName()).append("\"");
+                half2Query.append("\"").append(field.getName()).append("\"=");
                 field.setAccessible(true);
                 try {
-                    values.append("\"").append(field.get(obj)).append("\"");
+                    half2Query.append("'").append(field.get(obj)).append("'");
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 }
             }
         }
-        String finalQuery = half1Query.toString() + half2Query.toString() + ") " + values + ")";
-        System.out.println("addRecord query: " + finalQuery);
-
-        DAO.insert(finalQuery);
-        return false;
-    }
-
-    //READ
-    public static void readRecord(){
-
-    }
-
-    //UPDATE
-    public static boolean updateRecord(Object obj){
-        if (!isObjectValidInsert(obj)) {
-            return false;
-        }
-        StringBuilder half1Query = new StringBuilder();
-        StringBuilder half2Query = new StringBuilder();
-        half1Query.append("Update ").append(obj.getClass().getSimpleName()).append(" Set ");
-
-
-
-
-
-
+        String finalString = half1Query.toString() + half2Query.toString();//TODO
+        System.out.println("Final updateRecordString: " + finalString);
 
         return true;
     }
@@ -141,68 +204,5 @@ public class ORM {
 
     }
 
-    public static boolean isObjectValidInsert(Object potentialNewObject) {
 
-        //PRIMARY KEY
-        List<Field> primaryKeyFields = Arrays.stream(potentialNewObject.getClass().getDeclaredFields())
-                .filter(field -> Arrays.toString(field.getDeclaredAnnotations()).contains("PrimaryKey")).collect(Collectors.toList());
-        boolean primaryKeyExists = false;
-        StringBuilder query1 = new StringBuilder();
-        if (primaryKeyFields.size() > 1)
-            return false;
-        else if (primaryKeyFields.size() != 0) {
-            primaryKeyExists = true;
-            try {
-                primaryKeyFields.get(0).setAccessible(true);
-                query1.append("Select \"").append(primaryKeyFields.get(0).getName()).append("\" from \"").append(potentialNewObject.getClass().getSimpleName())
-                        .append("\" where \"").append(primaryKeyFields.get(0).getName()).append("\"=")
-                        .append(primaryKeyFields.get(0).get(potentialNewObject));
-            } catch (IllegalAccessException e) {
-                System.out.println("Variable(Primary) can't be accessed");
-                e.printStackTrace();
-            }
-        }
-
-        //UNIQUE KEYS
-        boolean uniqueFieldsExist = false;
-        List<Field> uniqueKeyFields = Arrays.stream(potentialNewObject.getClass().getDeclaredFields())
-                .filter(field -> Arrays.toString(field.getDeclaredAnnotations()).contains("Unique")).collect(Collectors.toList());
-        StringBuilder[] query2 = new StringBuilder[uniqueKeyFields.size()];
-        for (int i = 0; i < uniqueKeyFields.size(); i++) {
-            query2[i] = new StringBuilder();
-        }
-        if (uniqueKeyFields.size() >= 1) {
-            uniqueFieldsExist = true;
-            try {
-                for (int i = 0; i < uniqueKeyFields.size(); i++) {
-                    uniqueKeyFields.get(i).setAccessible(true);
-//                    ORM_Helper.getFieldsFromAnnotation(potentialNewObject.getClass(), "Unique")[i].setAccessible(true);
-                    query2[i].append("Select \"").append(uniqueKeyFields.get(i).getName()).append("\" from \"").append(potentialNewObject.getClass().getSimpleName())
-                            .append("\" where \"").append(uniqueKeyFields.get(i).getName()).append("\" ='")
-                            .append(uniqueKeyFields.get(i).get(potentialNewObject)).append("'");
-                }
-            } catch (IllegalAccessException e) {
-                System.out.println("Variable(Unique) can't be accessed");
-                e.printStackTrace();
-            }
-        }
-
-        //NOT NULL KEYS
-        List<Field> notNullKeyFields = Arrays.stream(potentialNewObject.getClass().getDeclaredFields())
-                .filter(field -> Arrays.toString(field.getDeclaredAnnotations()).contains("NotNull")).collect(Collectors.toList());
-        if (notNullKeyFields.size() > 1) {
-            try {
-                for (Field notNullKeyField : notNullKeyFields) {
-                    notNullKeyField.setAccessible(true);
-                    if (notNullKeyField.get(potentialNewObject) == null) {
-                        return false;
-                    }
-                }
-            } catch (IllegalAccessException e) {
-                System.out.println("Variable(NotNull) can't be accessed");
-                e.printStackTrace();
-            }
-        }
-        return DAO.checkValid(primaryKeyExists,uniqueFieldsExist,query1,query2);
-    }
 }

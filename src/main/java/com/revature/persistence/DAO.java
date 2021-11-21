@@ -8,10 +8,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -75,13 +72,42 @@ public class DAO {
         return true;
     }
 
-    public static void insert(String finalQuery) {
+    /**
+     *
+     * @param finalQuery query to execute insert statement
+     * @param getSerialIDQuery potential query for serial type of primary key. May be null
+     * @return int of the serial ID otherwise returns 0
+     */
+    public static int insert(String finalQuery,String getSerialIDQuery) {
         try(Connection conn = ConnectionService.getInstance()) {
             PreparedStatement statement = conn.prepareStatement(finalQuery);
             statement.execute();
+            if(getSerialIDQuery!=null) {
+                statement = conn.prepareStatement(getSerialIDQuery);
+                ResultSet rs = statement.executeQuery();
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
         } catch(SQLException e){
             System.out.println("Failed Insert");
             e.printStackTrace();
         }
+        return 0;
+    }
+    public static boolean doesTableExist(Class<?> clazz){
+        String tableName = clazz.getSimpleName();
+        String query = "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'project1' AND table_name = ?);";
+
+        try(Connection conn = ConnectionService.getInstance()){
+            PreparedStatement statement = conn.prepareStatement(query);
+            statement.setString(1,tableName);
+            ResultSet rs = statement.executeQuery();
+            if(rs.next())
+                return rs.getBoolean("exists");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }
