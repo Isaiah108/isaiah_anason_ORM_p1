@@ -162,6 +162,18 @@ public class DAO {
         return true;
     }
 
-    public static void update(String query) {
+    /**
+     *
+     * @param obj object to update query with
+     * @param primaryKeyField field of the primary key
+     * @param query the updatequery.. gets result of potentially old primary to search against
+     */
+    public static void update(Object obj, Field primaryKeyField, String query) {
+        try(Connection conn = ConnectionService.getInstance()){
+            PreparedStatement statement = conn.prepareStatement(query);
+            statement.execute();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
     }
 }

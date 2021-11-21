@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 public class ORM {
     public static void makeTable(Class<?> clazz) {
-        if(!ORM_Helper.isClassValid(clazz))
+        if (!ORM_Helper.isClassValid(clazz))
             return;
 
         String tableName = clazz.getSimpleName();
@@ -53,7 +53,6 @@ public class ORM {
     }
 
     /**
-     *
      * @param obj to be inserted into the database. If PrimaryKey is serial will update object automatically
      * @return whether record could be added
      */
@@ -91,7 +90,7 @@ public class ORM {
 
             //If annotation on field is primary key and not serial
             if (fieldAnnotations.contains("PrimaryKey")) {
-                if(!(field.getDeclaredAnnotation(PrimaryKey.class).isSerial())){
+                if (!(field.getDeclaredAnnotation(PrimaryKey.class).isSerial())) {
                     if (half2Query.length() != 0) {
                         half2Query.append(",");
                         values.append(",");
@@ -105,9 +104,9 @@ public class ORM {
                     }
                 }
                 //IF primary key field is serial
-                else{
+                else {
                     getSerialIDQuery = "select \"" + field.getName() + "\" from \"" + obj.getClass().getSimpleName()
-                            + "\" order by " +field.getName() + " asc";
+                            + "\" order by " + field.getName() + " asc";
                     System.out.println("getSerialQuery: " + getSerialIDQuery);
                     serialFieldName = field.getName();
                 }
@@ -115,15 +114,15 @@ public class ORM {
         }
         String finalQuery = half1Query.toString() + half2Query.toString() + ") " + values + ")";
         System.out.println("addRecord query: " + finalQuery);
-        int serialIDIFExists = DAO.insert(finalQuery,getSerialIDQuery);
+        int serialIDIFExists = DAO.insert(finalQuery, getSerialIDQuery);
 
-        if(serialFieldName!=null){
+        if (serialFieldName != null) {
             try {
                 Field serialField = obj.getClass().getDeclaredField(serialFieldName);
                 serialField.setAccessible(true);
-                serialField.set(obj,serialIDIFExists);
+                serialField.set(obj, serialIDIFExists);
 
-            }catch(NoSuchFieldException | IllegalAccessException e){
+            } catch (NoSuchFieldException | IllegalAccessException e) {
                 e.printStackTrace();
             }
         }
@@ -142,7 +141,6 @@ public class ORM {
         }
         String half1Query = "Update \"" + obj.getClass().getSimpleName() + "\" Set ";
         StringBuilder half2Query = new StringBuilder();
-        String primaryKeyFieldString = null;
         Field primaryKeyField = null;
 
         Field[] fields = obj.getClass().getDeclaredFields();
@@ -166,7 +164,6 @@ public class ORM {
 
             //If annotation on field is primary key and not serial
             if (fieldAnnotations.contains("PrimaryKey")) {
-                primaryKeyFieldString = field.getName();
                 primaryKeyField = field;
                 if (half2Query.length() != 0) {
                     half2Query.append(",");
@@ -182,21 +179,22 @@ public class ORM {
         }
         primaryKeyField.setAccessible(true);
         try {
-            half2Query.append(" where \"").append(primaryKeyFieldString).append("\"='").append(primaryKeyField.get(obj)).append("'");
+            half2Query.append(" where \"").append(primaryKeyField.getName()).append("\"='").append(primaryKeyField.get(obj)).append("'");
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
+
         String finalString = half1Query + half2Query.toString();
         System.out.println("Final updateRecordString: " + finalString);
-        if(ORM_Helper.isObjectValidUpdate(obj))
-            DAO.update(finalString);
-
-
-        return true;
+        if (ORM_Helper.isObjectValidUpdate(obj)) {
+            DAO.update(obj, primaryKeyField, finalString);
+            return true;
+        }
+        return false;
     }
 
     //DELETE
-    public static boolean deleteRecord(){
+    public static boolean deleteRecord() {
         return true;
     }
 

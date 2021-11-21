@@ -17,7 +17,7 @@ public class Application {
         ORM.makeTable(user.getClass());
         ORM.addRecord(user);
 
-        user.setUsername("44");
+        user.setPassword(null);
 
         ORM.updateRecord(user);
 

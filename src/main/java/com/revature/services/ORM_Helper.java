@@ -75,7 +75,7 @@ public class ORM_Helper {
         //NOT NULL KEYS
         List<Field> notNullKeyFields = Arrays.stream(obj.getClass().getDeclaredFields())
                 .filter(field -> Arrays.toString(field.getDeclaredAnnotations()).contains("NotNull")).collect(Collectors.toList());
-        if (notNullKeyFields.size() > 1) {
+        if (notNullKeyFields.size() > 0) {
             try {
                 for (Field notNullKeyField : notNullKeyFields) {
                     notNullKeyField.setAccessible(true);
