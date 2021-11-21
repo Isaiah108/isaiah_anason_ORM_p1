@@ -4,14 +4,7 @@ import com.revature.annotations.PrimaryKey;
 import com.revature.persistence.DAO;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
-import java.sql.SQLOutput;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import com.revature.services.ORM_Helper;
 
 public class ORM {
     public static void makeTable(Class<?> clazz) {
@@ -22,26 +15,20 @@ public class ORM {
         StringBuilder half1Query = new StringBuilder();
         StringBuilder half2Query = new StringBuilder();
         Field[] fields = clazz.getDeclaredFields();
-        boolean containsPrimaryKey = false;
 
-        half1Query.append("CREATE TABLE IF NOT EXISTS \"" + tableName + "\"(");
+        half1Query.append("CREATE TABLE IF NOT EXISTS \"").append(tableName).append("\"(");
 
         //Checks for primary key and makes that first column
         for (Field field : fields) {
             if (Arrays.toString(field.getAnnotations()).contains("PrimaryKey")) {
-                containsPrimaryKey = true;
-                half2Query.append(field.getName() + " ");
+                half2Query.append(field.getName()).append(" ");
                 if (field.getDeclaredAnnotation(PrimaryKey.class).isSerial())
                     half2Query.append("serial");
                 else
                     half2Query.append(ORM_Helper.convertType(field.getType()));
                 half2Query.append(" primary key");
-            } else {
-
             }
         }
-        if (!containsPrimaryKey)
-            half2Query.append("id serial primary key");
 
         //Check for other columns
         for (Field field : fields) {
@@ -133,6 +120,7 @@ public class ORM {
         if(serialFieldName!=null){
             try {
                 Field serialField = obj.getClass().getDeclaredField(serialFieldName);
+                serialField.setAccessible(true);
                 serialField.set(obj,serialIDIFExists);
 
             }catch(NoSuchFieldException | IllegalAccessException e){
@@ -152,10 +140,13 @@ public class ORM {
         if (!ORM_Helper.isObjectValid(obj)) {
             return false;
         }
-        StringBuilder half1Query = new StringBuilder();
+        String half1Query = "Update \"" + obj.getClass().getSimpleName() + "\" Set ";
         StringBuilder half2Query = new StringBuilder();
-        half1Query.append("Update ").append(obj.getClass().getSimpleName()).append(" Set ");
+        String primaryKeyFieldString = null;
+        Field primaryKeyField = null;
+
         Field[] fields = obj.getClass().getDeclaredFields();
+
         for (Field field : fields) {
             String fieldAnnotations = Arrays.toString(field.getDeclaredAnnotations());
 
@@ -174,7 +165,9 @@ public class ORM {
             }
 
             //If annotation on field is primary key and not serial
-            if (fieldAnnotations.contains("PrimaryKey") && !(field.getDeclaredAnnotation(PrimaryKey.class).isSerial())) {
+            if (fieldAnnotations.contains("PrimaryKey")) {
+                primaryKeyFieldString = field.getName();
+                primaryKeyField = field;
                 if (half2Query.length() != 0) {
                     half2Query.append(",");
                 }
@@ -187,14 +180,25 @@ public class ORM {
                 }
             }
         }
-        String finalString = half1Query.toString() + half2Query.toString();//TODO
+        primaryKeyField.setAccessible(true);
+        try {
+            half2Query.append(" where \"").append(primaryKeyFieldString).append("\"='").append(primaryKeyField.get(obj)).append("'");
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        String finalString = half1Query + half2Query.toString();
         System.out.println("Final updateRecordString: " + finalString);
+        if(ORM_Helper.isObjectValidUpdate(obj))
+            DAO.update(finalString);
+
 
         return true;
     }
 
     //DELETE
-
+    public static boolean deleteRecord(){
+        return true;
+    }
 
     public static <T> void getAnnotation(Class<T> clazz) {
         Field[] fields = clazz.getFields();

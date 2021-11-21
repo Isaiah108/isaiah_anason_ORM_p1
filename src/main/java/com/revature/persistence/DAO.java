@@ -1,6 +1,7 @@
 package com.revature.persistence;
 
 import com.revature.annotations.PrimaryKey;
+import com.revature.annotations.Unique;
 import com.revature.services.ConnectionService;
 import com.revature.services.ORM_Helper;
 
@@ -9,6 +10,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,22 +48,20 @@ public class DAO {
      *
      * @return boolean of whether potentialNewObject primarykey isUnique, otherwise if it exists in database returns false
      */
-    public static boolean checkValid(boolean primaryKeyExists,boolean uniqueFieldsExist,StringBuilder query1,StringBuilder[] query2){
+    public static boolean checkValidToInsert(boolean uniqueFieldsExist, StringBuilder query1, StringBuilder[] query2){
 
         System.out.println("Query1:" + query1);
         System.out.println("Query2:" + Arrays.toString(query2));
 
         try (Connection conn = ConnectionService.getInstance()) {
-            if (primaryKeyExists) {
                 PreparedStatement statement = conn.prepareStatement(query1.toString());
                 ResultSet rs = statement.executeQuery();
                 if (rs.next())
                     return false; // false = not unique
-            }
             if(uniqueFieldsExist){
                 for (StringBuilder stringBuilder : query2) {
-                    PreparedStatement statement = conn.prepareStatement(stringBuilder.toString());
-                    ResultSet rs = statement.executeQuery();
+                    statement = conn.prepareStatement(stringBuilder.toString());
+                    rs = statement.executeQuery();
                     if (rs.next())
                         return false;
                 }
@@ -109,5 +109,59 @@ public class DAO {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public static boolean checkIDExists(Object obj, Object objID,Field primaryKeyField) {
+        String query = "select \"" + primaryKeyField.getName() + "\" from \"" + obj.getClass().getSimpleName() + "\" where \""
+                + primaryKeyField.getName() + "\"='" + objID + "'";
+        System.out.println("CheckIDExistsQuery: " + query);
+        try(Connection conn = ConnectionService.getInstance()){
+            PreparedStatement statement = conn.prepareStatement(query);
+            ResultSet rs = statement.executeQuery();
+            if(rs.next())
+                return true;
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * checks whether potential update objects unique fields are unique in relation to database
+     * @return
+     */
+    public static boolean checkUniqueFieldsAreUnique(Object obj) {
+        List<Field> uniqueFields = Arrays.stream(obj.getClass().getDeclaredFields())
+                .filter(field->Arrays.toString(field.getDeclaredAnnotations()).contains("Unique")).collect(Collectors.toList());
+        List<String> queries = new ArrayList<>(uniqueFields.size());
+
+        for (Field uniqueField : uniqueFields) {
+            uniqueField.setAccessible(true);
+            try {
+                queries.add("Select \"" + uniqueField.getName() + "\" from \"" + obj.getClass().getSimpleName() + "\" where \""
+                        + uniqueField.getName() + "\"='" + uniqueField.get(obj)+"'");
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+
+        }
+        for(String query: queries){
+            System.out.println("CheckUnqiqueQuery: " + query);
+        }
+
+        try(Connection conn = ConnectionService.getInstance()){
+            for(String query: queries) {
+                PreparedStatement statement = conn.prepareStatement(query);
+                ResultSet rs = statement.executeQuery();
+                if(rs.next())
+                    return false;
+            }
+        }catch(SQLException e){
+            e.printStackTrace();
+        }
+        return true;
+    }
+
+    public static void update(String query) {
     }
 }
