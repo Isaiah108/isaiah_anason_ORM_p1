@@ -5,6 +5,7 @@ import com.revature.persistence.DAO;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.List;
 
 public class ORM {
     public static void makeTable(Class<?> clazz) {
@@ -60,6 +61,8 @@ public class ORM {
         if (!ORM_Helper.isObjectValidInsert(obj)) {
             return false;
         }
+        if (!DAO.doesTableExist(obj.getClass()))
+            return false;
         StringBuilder half1Query = new StringBuilder();
         StringBuilder half2Query = new StringBuilder();
         StringBuilder values = new StringBuilder();
@@ -114,7 +117,7 @@ public class ORM {
         }
         String finalQuery = half1Query.toString() + half2Query.toString() + ") " + values + ")";
         System.out.println("addRecord query: " + finalQuery);
-        int serialIDIFExists = DAO.insert(finalQuery, getSerialIDQuery);
+        int serialIDIFExists = DAO.insert(obj, finalQuery, getSerialIDQuery);
 
         if (serialFieldName != null) {
             try {
@@ -126,12 +129,19 @@ public class ORM {
                 e.printStackTrace();
             }
         }
-        return false;
+        return true;
     }
 
     //READ
-    public static void readRecord() {
-
+    public static boolean readRecordByID(Class<?> clazz, Object primaryKeyValue) {
+        if(!ORM_Helper.isClassValid(clazz))
+            return false;
+        if (!DAO.doesTableExist(clazz))
+            return false;
+        Field[] fields = ORM_Helper.getFieldsFromAnnotation(clazz,"Primary Key");
+        String query = "select * from \"" + clazz.getSimpleName() + "\" where \"" + fields[0].getName() + "'";
+        DAO.readByID(query);
+        return true;
     }
 
     //UPDATE
@@ -139,6 +149,7 @@ public class ORM {
         if (!ORM_Helper.isObjectValid(obj)) {
             return false;
         }
+
         String half1Query = "Update \"" + obj.getClass().getSimpleName() + "\" Set ";
         StringBuilder half2Query = new StringBuilder();
         Field primaryKeyField = null;
@@ -187,24 +198,22 @@ public class ORM {
         String finalString = half1Query + half2Query.toString();
         System.out.println("Final updateRecordString: " + finalString);
         if (ORM_Helper.isObjectValidUpdate(obj)) {
-            DAO.update(obj, primaryKeyField, finalString);
+            DAO.update(finalString);
             return true;
         }
         return false;
     }
 
     //DELETE
-    public static boolean deleteRecord() {
+    public static boolean deleteRecordPrimaryKey(Class<?> clazz, Object primaryKeyValue) {
+        if (!ORM_Helper.isClassValid(clazz))
+            return false;
+        if (!DAO.doesTableExist(clazz))
+            return false;
+        Field[] fields = ORM_Helper.getFieldsFromAnnotation(clazz, "PrimaryKey");
+        String query = "delete from \"" + clazz.getSimpleName() + "\" where \"" + fields[0].getName() + "\"='" + primaryKeyValue.toString() + "'";
+        System.out.println("DeleteQuery: " + query);
+        DAO.deleteByID(query);
         return true;
     }
-
-    public static <T> void getAnnotation(Class<T> clazz) {
-        Field[] fields = clazz.getFields();
-        for (Field field : fields) {
-            System.out.println("Annotation: " + Arrays.toString(field.getAnnotations()));
-        }
-
-    }
-
-
 }

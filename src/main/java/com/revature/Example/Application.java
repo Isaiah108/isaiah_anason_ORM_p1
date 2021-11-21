@@ -21,13 +21,15 @@ public class Application {
 
         ORM.updateRecord(user);
 
+        ORM.deleteRecordPrimaryKey(User.class,3);
+
 //        System.out.println("Table Exist: "+DAO.doesTableExist(user.getClass()));
 //        System.out.println(ORM.updateRecord(user));
 //        System.out.println(ORM_Helper.isObjectValidUpdate(user));
 
 //        Field field = User.class.getDeclaredField("username");
 //        DAO.checkIDExists(user,3,field);
-        DAO.checkUniqueFieldsAreUnique(user);
+//        DAO.checkUniqueFieldsAreUnique(user);
 
 
 
