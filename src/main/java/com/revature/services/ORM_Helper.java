@@ -2,7 +2,9 @@ package com.revature.services;
 
 import com.revature.persistence.DAO;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -153,5 +155,40 @@ public class ORM_Helper {
         }
         System.out.println(query1.toString());
         return DAO.checkIDExists(obj, objID, primaryKeyFields.get(0)) && DAO.checkUniqueFieldsAreUnique(obj);
+    }
+
+    public static Object getInstance(Class<?> clazz){
+        Constructor<?> noArgsConstructor = null;
+
+        // constructor with a parameter of 0
+
+        noArgsConstructor = Arrays.stream(clazz.getDeclaredConstructors())
+                .filter( c -> c.getParameterCount() == 0)
+                .findFirst().orElse(null);
+
+        if(noArgsConstructor != null){
+            try {
+                return noArgsConstructor.newInstance();
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
+    public static Object convertStringToType(Field field, String s) {
+        String fieldString = field.getType().getSimpleName();
+        switch(fieldString){
+            case "boolean": return Boolean.parseBoolean(s);
+            case "char" : return s.charAt(0);
+            case "byte": return Byte.parseByte(s);
+            case "short":return Short.parseShort(s);
+            case "int": return Integer.parseInt(s);
+            case "long": return Long.parseLong(s);
+            case "float": return Float.parseFloat(s);
+            case "double": return Double.parseDouble(s);
+            case "String": return s;
+        }
+        return null;
     }
 }

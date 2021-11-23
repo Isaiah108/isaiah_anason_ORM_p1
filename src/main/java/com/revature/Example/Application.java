@@ -6,34 +6,25 @@ import com.revature.services.ORM;
 import com.revature.services.ORM_Helper;
 
 import java.lang.reflect.Field;
+import java.sql.SQLOutput;
 
 public class Application {
-    public static void main(String[] args) throws NoSuchFieldException {
+    public static void main(String[] args) throws NoSuchFieldException, InterruptedException {
         //TODO Have bug where Wrapper classes get converted to SQL integers and therefor cant handle null values
         User user = new User();
-
-        user.setUsername("2");
+        user.setUsername("Isaiah_108");
         user.setPassword("1234");
-        ORM.makeTable(user.getClass());
+
+        User user2 = new User();
+        user2.setUsername("Jane");
+        user2.setPassword("1234");
+
         ORM.addRecord(user);
+        ORM.addRecord(user2);
 
-        user.setPassword(null);
+        ORM.readAll(User.class);
 
-        ORM.updateRecord(user);
-
-        ORM.deleteRecordPrimaryKey(User.class,3);
-
-//        System.out.println("Table Exist: "+DAO.doesTableExist(user.getClass()));
-//        System.out.println(ORM.updateRecord(user));
-//        System.out.println(ORM_Helper.isObjectValidUpdate(user));
-
-//        Field field = User.class.getDeclaredField("username");
-//        DAO.checkIDExists(user,3,field);
-//        DAO.checkUniqueFieldsAreUnique(user);
-
-
-
-
+        ORM.dropTable(User.class);
 
     }
 }

@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 public class DAO {
 
     public static void executeCreateTable(String queryString) {
-        System.out.println("MakeTableQuery: " + queryString);
         try (Connection conn = ConnectionService.getInstance()) {
             PreparedStatement statement = conn.prepareStatement(queryString);
             statement.execute();
@@ -44,14 +43,11 @@ public class DAO {
     }
 
     /**
-     * Called only if not using serial database option. User defines the PrimaryKey and as such needs to be checked
+     * Called only if not using serial database onewObjectsption. User defines the PrimaryKey and as such needs to be checked
      *
      * @return boolean of whether potentialNewObject primarykey isUnique, otherwise if it exists in database returns false
      */
     public static boolean checkValidToInsert(boolean uniqueFieldsExist, StringBuilder query1, StringBuilder[] query2) {
-
-        System.out.println("Query1:" + query1);
-        System.out.println("Query2:" + Arrays.toString(query2));
 
         try (Connection conn = ConnectionService.getInstance()) {
             PreparedStatement statement = conn.prepareStatement(query1.toString());
@@ -95,16 +91,38 @@ public class DAO {
         return 0;
     }
 
-    public static Object readByID(String query) {
-        StringBuilder sb = new StringBuilder();
+    public static List<String> readByID(Class<?> clazz, String query) {
+        List<String> objectField_Values = new ArrayList<>();
         try (Connection conn = ConnectionService.getInstance()) {
             PreparedStatement statement = conn.prepareStatement(query);
             ResultSet rs = statement.executeQuery();
-            if(rs.next())
-                sb.append(rs.getObject(1).toString()); //TODO
-            else return null;
+            if (rs.next()) {
+                for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+                    objectField_Values.add(rs.getMetaData().getColumnName(i) + ":" + rs.getObject(i).toString());
+                }
+                return objectField_Values;
+            } else return null;
 
         } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static List<List<String>> readAll(Class<?> clazz,String query) {
+        List<List<String>> objects = new ArrayList<>();
+        try(Connection conn = ConnectionService.getInstance()){
+            PreparedStatement statement = conn.prepareStatement(query);
+            ResultSet rs = statement.executeQuery();
+            while(rs.next()){
+                List<String> objectField_Values = new ArrayList<>();
+                for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+                    objectField_Values.add(rs.getMetaData().getColumnName(i) + ":" + rs.getObject(i).toString());
+                }
+                objects.add(objectField_Values);
+            }
+            return objects;
+        }catch (SQLException e){
             e.printStackTrace();
         }
         return null;
@@ -201,4 +219,16 @@ public class DAO {
         }
         return true;
     }
+
+    public static void dropTable(Class<?> clazz){
+        String query = "Drop  table \"" + clazz.getSimpleName() + "\"";
+        try(Connection conn = ConnectionService.getInstance()){
+            PreparedStatement statement = conn.prepareStatement(query);
+            statement.execute();
+        }catch(SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+
 }

@@ -4,13 +4,15 @@ import com.revature.annotations.PrimaryKey;
 import com.revature.persistence.DAO;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class ORM {
-    public static void makeTable(Class<?> clazz) {
+    public static boolean makeTable(Class<?> clazz) {
         if (!ORM_Helper.isClassValid(clazz))
-            return;
+            return false;
 
         String tableName = clazz.getSimpleName();
         StringBuilder half1Query = new StringBuilder();
@@ -46,11 +48,10 @@ public class ORM {
                     half2Query.append("not null ");
             }
         }
-
         //finish building query String and execute it
         half2Query.append(");");
         DAO.executeCreateTable(half1Query.toString() + half2Query.toString());
-
+        return true;
     }
 
     /**
@@ -58,19 +59,21 @@ public class ORM {
      * @return whether record could be added
      */
     public static boolean addRecord(Object obj) {
+        if (!DAO.doesTableExist(obj.getClass()))
+            if (!makeTable(obj.getClass())) {
+                return false;
+            }
         if (!ORM_Helper.isObjectValidInsert(obj)) {
             return false;
         }
-        if (!DAO.doesTableExist(obj.getClass()))
-            return false;
-        StringBuilder half1Query = new StringBuilder();
+        String half1Query = "insert into \"" + obj.getClass().getSimpleName() + "\"(";
         StringBuilder half2Query = new StringBuilder();
         StringBuilder values = new StringBuilder();
         String getSerialIDQuery = null;
         String serialFieldName = null;
 
         values.append("values(");
-        half1Query.append("insert into \"").append(obj.getClass().getSimpleName()).append("\"(");
+
         //loop over fields
         Field[] fields = obj.getClass().getDeclaredFields();
         for (Field field : fields) {
@@ -115,8 +118,7 @@ public class ORM {
                 }
             }
         }
-        String finalQuery = half1Query.toString() + half2Query.toString() + ") " + values + ")";
-        System.out.println("addRecord query: " + finalQuery);
+        String finalQuery = half1Query + half2Query.toString() + ") " + values + ")";
         int serialIDIFExists = DAO.insert(obj, finalQuery, getSerialIDQuery);
 
         if (serialFieldName != null) {
@@ -133,15 +135,55 @@ public class ORM {
     }
 
     //READ
-    public static boolean readRecordByID(Class<?> clazz, Object primaryKeyValue) {
-        if(!ORM_Helper.isClassValid(clazz))
-            return false;
+    public static Object readRecordByID(Class<?> clazz, String primaryKeyValue) {
         if (!DAO.doesTableExist(clazz))
-            return false;
-        Field[] fields = ORM_Helper.getFieldsFromAnnotation(clazz,"Primary Key");
-        String query = "select * from \"" + clazz.getSimpleName() + "\" where \"" + fields[0].getName() + "'";
-        DAO.readByID(query);
-        return true;
+            return null;
+        Object newObj = null;
+        Field[] fields = ORM_Helper.getFieldsFromAnnotation(clazz, "PrimaryKey");
+        String query = "select * from \"" + clazz.getSimpleName() + "\" where \"" + fields[0].getName() + "\"='" + primaryKeyValue + "'";
+
+        List<String> objectField_Values = DAO.readByID(clazz, query);
+        if (objectField_Values != null) {
+            try {
+                Object obj = ORM_Helper.getInstance(clazz);
+                for (String objectValue : objectField_Values) {
+                    String[] field_value = (objectValue.split(":"));
+                    Field field = clazz.getDeclaredField(field_value[0]);
+                    field.setAccessible(true);
+                    field.set(obj, ORM_Helper.convertStringToType(field, field_value[1]));
+                }
+                newObj = obj;
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        return newObj;
+    }
+
+    public static List<Object> readAll(Class<?> clazz) {
+        if (!DAO.doesTableExist(clazz))
+            return null;
+        String query = "select * from \"" + clazz.getSimpleName() + "\"";
+        List<Object> newObjects = null;
+        List<List<String>> objects = DAO.readAll(clazz, query);
+        if (objects != null) {
+            newObjects = new ArrayList<>();
+            for (List<String> objectField_Values : objects) {
+                try {
+                    Object obj = ORM_Helper.getInstance(clazz);
+                    for (String objectValue : objectField_Values) {
+                        String[] field_value = (objectValue.split(":"));
+                        Field field = clazz.getDeclaredField(field_value[0]);
+                        field.setAccessible(true);
+                        field.set(obj, ORM_Helper.convertStringToType(field, field_value[1]));
+                    }
+                    newObjects.add(obj);
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return newObjects;
     }
 
     //UPDATE
@@ -149,6 +191,8 @@ public class ORM {
         if (!ORM_Helper.isObjectValid(obj)) {
             return false;
         }
+        if (!ORM_Helper.isClassValid(obj.getClass()))
+            return false;
 
         String half1Query = "Update \"" + obj.getClass().getSimpleName() + "\" Set ";
         StringBuilder half2Query = new StringBuilder();
@@ -215,5 +259,10 @@ public class ORM {
         System.out.println("DeleteQuery: " + query);
         DAO.deleteByID(query);
         return true;
+    }
+
+    public static void dropTable(Class<?> clazz) {
+        if (DAO.doesTableExist(clazz))
+            DAO.dropTable(clazz);
     }
 }

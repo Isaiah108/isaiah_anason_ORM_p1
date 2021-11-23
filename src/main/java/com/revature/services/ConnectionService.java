@@ -12,7 +12,8 @@ import java.util.Properties;
 public class ConnectionService {
 
     private static Properties properties;
-    private static final String propertiesPath = "src/main/resources/application.properties";
+//    private static final String propertiesPath = "src/main/resources/application.properties";
+    private static final String propertiesPath = "C:\\Users\\Isaiah Anason\\gitRepos\\Isaiah_Anason-_Servlet_p1\\src\\main\\resources\\application.properties";
     private static Connection instance;
 
     private ConnectionService() {
