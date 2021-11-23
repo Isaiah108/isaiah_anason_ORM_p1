@@ -2,6 +2,7 @@ package com.revature.services;
 
 import java.io.*;
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -13,7 +14,7 @@ public class ConnectionService {
 
     private static Properties properties;
 //    private static final String propertiesPath = "src/main/resources/application.properties";
-    private static final String propertiesPath = "C:\\Users\\Isaiah Anason\\gitRepos\\Isaiah_Anason-_Servlet_p1\\src\\main\\resources\\application.properties";
+    private static final String propertiesPath = "\\src\\main\\resources\\application.properties";
     private static Connection instance;
 
     private ConnectionService() {
@@ -25,10 +26,10 @@ public class ConnectionService {
      */
     private static void loadProperties() {
         properties = new Properties();
-        File file = new File(propertiesPath);
 
         try {
             InputStream stream = new FileInputStream(new File(propertiesPath).getAbsoluteFile());
+            System.out.println(new File(propertiesPath).getAbsoluteFile());
             properties.load(stream);
         } catch (IOException e) {
             e.printStackTrace();
@@ -40,14 +41,16 @@ public class ConnectionService {
      * @return Connection to the database
      */
     public static Connection getInstance() {
-        if (properties == null)
-            loadProperties();
+//        if (properties == null)
+//            loadProperties();
         try {
             Class.forName("org.postgresql.Driver");
-            instance = DriverManager.getConnection(
-                    properties.getProperty("dbURL"),
-                    properties.getProperty("username"),
-                    properties.getProperty("password"));
+//            instance = DriverManager.getConnection(
+//                    properties.getProperty("dbURL"),
+//                    properties.getProperty("username"),
+//                    properties.getProperty("password"));
+            instance = DriverManager.getConnection("jdbc:postgresql://myprojects.cq72bviehvvn.us-west-2.rds.amazonaws.com:5432/postgres?currentSchema=project1"
+            ,"postgres","qwerty1234");
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
         }

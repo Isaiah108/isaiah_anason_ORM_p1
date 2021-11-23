@@ -41,7 +41,7 @@ public class ORM_Helper {
             case "java.lang.Float":
             case "double":
             case "java.lang.Double":
-                outputType = "double";
+                outputType = "double precision";
                 break;
             case "java.lang.String":
                 outputType = "text";
@@ -94,8 +94,9 @@ public class ORM_Helper {
     }
 
     public static boolean isObjectValidInsert(Object potentialNewObject) {
-        if (!isObjectValid(potentialNewObject))
+        if (!isObjectValid(potentialNewObject)) {
             return false;
+        }
         //PRIMARY KEY
         List<Field> primaryKeyFields = Arrays.stream(potentialNewObject.getClass().getDeclaredFields())
                 .filter(field -> Arrays.toString(field.getDeclaredAnnotations()).contains("PrimaryKey")).collect(Collectors.toList());
