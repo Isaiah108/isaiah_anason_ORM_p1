@@ -109,12 +109,12 @@ public class DAO {
         return null;
     }
 
-    public static List<List<String>> readAll(Class<?> clazz,String query) {
+    public static List<List<String>> readAll(Class<?> clazz, String query) {
         List<List<String>> objects = new ArrayList<>();
-        try(Connection conn = ConnectionService.getInstance()){
+        try (Connection conn = ConnectionService.getInstance()) {
             PreparedStatement statement = conn.prepareStatement(query);
             ResultSet rs = statement.executeQuery();
-            while(rs.next()){
+            while (rs.next()) {
                 List<String> objectField_Values = new ArrayList<>();
                 for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
                     objectField_Values.add(rs.getMetaData().getColumnName(i) + ":" + rs.getObject(i).toString());
@@ -122,7 +122,7 @@ public class DAO {
                 objects.add(objectField_Values);
             }
             return objects;
-        }catch (SQLException e){
+        } catch (SQLException e) {
             e.printStackTrace();
         }
         return null;
@@ -174,7 +174,6 @@ public class DAO {
             return false;
         String query = "select \"" + primaryKeyField.getName() + "\" from \"" + obj.getClass().getSimpleName() + "\" where \""
                 + primaryKeyField.getName() + "\"='" + objID + "'";
-        System.out.println("CheckIDExistsQuery: " + query);
         try (Connection conn = ConnectionService.getInstance()) {
             PreparedStatement statement = conn.prepareStatement(query);
             ResultSet rs = statement.executeQuery();
@@ -220,15 +219,13 @@ public class DAO {
         return true;
     }
 
-    public static void dropTable(Class<?> clazz){
+    public static void dropTable(Class<?> clazz) {
         String query = "Drop  table \"" + clazz.getSimpleName() + "\"";
-        try(Connection conn = ConnectionService.getInstance()){
+        try (Connection conn = ConnectionService.getInstance()) {
             PreparedStatement statement = conn.prepareStatement(query);
             statement.execute();
-        }catch(SQLException e){
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-
-
 }

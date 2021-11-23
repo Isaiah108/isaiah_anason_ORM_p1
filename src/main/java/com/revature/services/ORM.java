@@ -240,7 +240,6 @@ public class ORM {
         }
 
         String finalString = half1Query + half2Query.toString();
-        System.out.println("Final updateRecordString: " + finalString);
         if (ORM_Helper.isObjectValidUpdate(obj)) {
             DAO.update(finalString);
             return true;
@@ -256,7 +255,6 @@ public class ORM {
             return false;
         Field[] fields = ORM_Helper.getFieldsFromAnnotation(clazz, "PrimaryKey");
         String query = "delete from \"" + clazz.getSimpleName() + "\" where \"" + fields[0].getName() + "\"='" + primaryKeyValue.toString() + "'";
-        System.out.println("DeleteQuery: " + query);
         DAO.deleteByID(query);
         return true;
     }

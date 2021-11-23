@@ -13,16 +13,18 @@ public class User {
     private String password;
     @Column
     private String firstName;
-    @Column
-    int age;
+    @NotNull
+    private int age;
+    @Unique
+    private int id;
 
-//    public int getId() {
-//        return id;
-//    }
-//
-//    public void setId(int id) {
-//        this.id = id;
-//    }
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
 
     public String getUsername() {
         return username;
