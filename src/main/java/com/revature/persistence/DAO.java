@@ -16,7 +16,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DAO {
-
+    /**
+     * simple database query to create table if it doesnt already exist.
+     * @param queryString query to create the table
+     */
     public static void executeCreateTable(String queryString) {
         try (Connection conn = ConnectionService.getInstance()) {
             PreparedStatement statement = conn.prepareStatement(queryString);
@@ -25,21 +28,6 @@ public class DAO {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-    }
-
-    public static Object getInstance(Class<?> clazz) throws InvocationTargetException, InstantiationException, IllegalAccessException {
-        Constructor<?> noArgsConstructor = null;
-
-        // constructor with a parameter of 0
-
-        noArgsConstructor = Arrays.stream(clazz.getDeclaredConstructors())
-                .filter(c -> c.getParameterCount() == 0)
-                .findFirst().orElse(null);
-
-        if (noArgsConstructor != null) {
-            return noArgsConstructor.newInstance();
-        }
-        return null;
     }
 
     /**
@@ -92,6 +80,12 @@ public class DAO {
         return -1;
     }
 
+    /**
+     *
+     * @param clazz class table to read
+     * @param query query to database to check for a single primary key id. Gets 1 record
+     * @return List<String> in format of field:value for each desired field. Needs to be seperated.
+     */
     public static List<String> readByID(Class<?> clazz, String query) {
         List<String> objectField_Values = new ArrayList<>();
         try (Connection conn = ConnectionService.getInstance()) {
@@ -110,6 +104,12 @@ public class DAO {
         return null;
     }
 
+    /**
+     *
+     * @param clazz class table to read
+     * @param query query to database to grab all records
+     * @return List of Lists in format of field:value for each desired field. needs to be seperated
+     */
     public static List<List<String>> readAll(Class<?> clazz, String query) {
         List<List<String>> objects = new ArrayList<>();
         try (Connection conn = ConnectionService.getInstance()) {
@@ -153,7 +153,11 @@ public class DAO {
         }
     }
 
-
+    /**
+     *
+     * @param clazz class table to check for exists for
+     * @return whether class table exists
+     */
     public static boolean doesTableExist(Class<?> clazz) {
         String tableName = clazz.getSimpleName();
         String query = "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'project1' AND table_name = ?);";
@@ -170,10 +174,17 @@ public class DAO {
         return false;
     }
 
-    public static boolean checkIDExists(Object obj, Object objID, Field primaryKeyField) {
-        if (!doesTableExist(obj.getClass()))
+    /**
+     *
+     * @param objID
+     * @param primaryKeyField
+     * @return
+     */
+    public static boolean checkIDExists(Object objID, Field primaryKeyField) {
+        if (!doesTableExist(primaryKeyField.getDeclaringClass()))
             return false;
-        String query = "select \"" + primaryKeyField.getName() + "\" from \"" + obj.getClass().getSimpleName() + "\" where \""
+
+        String query = "select \"" + primaryKeyField.getName() + "\" from \"" + primaryKeyField.getDeclaringClass().getSimpleName() + "\" where \""
                 + primaryKeyField.getName() + "\"='" + objID + "'";
         try (Connection conn = ConnectionService.getInstance()) {
             PreparedStatement statement = conn.prepareStatement(query);

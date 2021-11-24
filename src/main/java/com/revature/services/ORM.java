@@ -112,7 +112,7 @@ public class ORM {
                 //IF primary key field is serial
                 else {
                     getSerialIDQuery = "select \"" + field.getName() + "\" from \"" + obj.getClass().getSimpleName()
-                            + "\" order by " + field.getName() + " asc";
+                            + "\" order by " + field.getName() + " desc";
                     System.out.println("getSerialQuery: " + getSerialIDQuery);
                     serialFieldName = field.getName();
                 }
@@ -254,7 +254,11 @@ public class ORM {
             return false;
         if (!DAO.doesTableExist(clazz))
             return false;
+
         Field[] fields = ORM_Helper.getFieldsFromAnnotation(clazz, "PrimaryKey");
+        if(!DAO.checkIDExists(primaryKeyValue,fields[0])){
+            return false;
+        }
         String query = "delete from \"" + clazz.getSimpleName() + "\" where \"" + fields[0].getName() + "\"='" + primaryKeyValue.toString() + "'";
         DAO.deleteByID(query);
         return true;

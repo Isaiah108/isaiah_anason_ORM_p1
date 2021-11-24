@@ -154,7 +154,7 @@ public class ORM_Helper {
             System.out.println("Variable(Primary) can't be accessed");
             e.printStackTrace();
         }
-        return DAO.checkIDExists(obj, objID, primaryKeyFields.get(0)) && DAO.checkUniqueFieldsAreUnique(obj);
+        return DAO.checkIDExists(objID, primaryKeyFields.get(0)) && DAO.checkUniqueFieldsAreUnique(obj);
     }
 
     public static Object getInstance(Class<?> clazz){
