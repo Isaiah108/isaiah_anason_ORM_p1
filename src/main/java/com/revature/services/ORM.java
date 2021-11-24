@@ -130,7 +130,8 @@ public class ORM {
             } catch (NoSuchFieldException | IllegalAccessException e) {
                 e.printStackTrace();
             }
-        }
+        }else if (serialIDIFExists==-1)
+            return false;
         return true;
     }
 

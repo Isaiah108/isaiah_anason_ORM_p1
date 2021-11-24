@@ -84,11 +84,12 @@ public class DAO {
                     return rs.getInt(1);
                 }
             }
+            else return 0;
         } catch (SQLException e) {
             System.out.println("Failed Insert");
             e.printStackTrace();
         }
-        return 0;
+        return -1;
     }
 
     public static List<String> readByID(Class<?> clazz, String query) {
