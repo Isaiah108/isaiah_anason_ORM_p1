@@ -3,8 +3,7 @@
 - This Project allows for automatically persisting annotated class models to PostgresSQL database
 
 ## How to use
-#### Annotations
-Use Following Annotations on class fields
+#### Annotations - Use Following Annotations on class fields
 - @PrimaryKey - Must use one and only one.
 - @NotNull - Fields that cannot have null value
 - @Unique - Fields that must be unique for that Column of database
