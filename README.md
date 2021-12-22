@@ -11,7 +11,7 @@
 - @Unique - Fields that must be unique for that Column of database
 - @Column - Any other field you want stored in the database that doesn't
   contain constraints
-#### Main usage
+#### ORM usage
 - ORM.makeTable(Class)
 - ORM.addRecord(Object)
 - ORM.readRecordByID(Class,primaryKey)
