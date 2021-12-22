@@ -4,8 +4,7 @@
 
 ## How to use
 #### Annotations
-- How to use ORM
-- Use Following Annotations on class fields
+Use Following Annotations on class fields
 - @PrimaryKey - Must use one and only one.
 - @NotNull - Fields that cannot have null value
 - @Unique - Fields that must be unique for that Column of database
