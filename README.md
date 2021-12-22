@@ -10,7 +10,7 @@
 - @NotNull - Fields that cannot have null value
 - @Unique - Fields that must be unique for that Column of database
 - @Column - Any other field you want stored in the database that doesn't
-  contains constraints
+  contain constraints
 #### Main usage
 - ORM.makeTable(Class)
 - ORM.addRecord(Object)
