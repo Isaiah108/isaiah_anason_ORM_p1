@@ -34,6 +34,5 @@ https://github.com/211025-Enterprise/Isaiah_Anason-_Servlet_p1
 - JUnit (TDD- Testing)
 - Mockito (JUnit Mocking)
 - Jacoco (code testing coverage)
-- 
 ## Contributors
 - Isaiah Anason
