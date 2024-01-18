@@ -112,7 +112,7 @@ public class ORM {
                 //IF primary key field is serial
                 else {
                     getSerialIDQuery = "select \"" + field.getName() + "\" from \"" + obj.getClass().getSimpleName()
-                            + "\" order by " + field.getName() + " desc";df
+                            + "\" order by " + field.getName() + " desc";
                     serialFieldName = field.getName();
                 }
             }
