@@ -58,7 +58,7 @@ public class ORM {
      * @param obj to be inserted into the database. If PrimaryKey is serial will update object automatically
      * @return whether record could be added
      */
-    public boolean addRecord(Object obj) {
+    public static boolean addRecord(Object obj) {
         if (!DAO.doesTableExist(obj.getClass()))
             if (!makeTable(obj.getClass())) {
                 return false;
@@ -136,7 +136,7 @@ public class ORM {
     }
 
     //READ
-    public Object readRecordByID(Class<?> clazz, String primaryKeyValue) {
+    public static Object readRecordByID(Class<?> clazz, String primaryKeyValue) {
         if (!DAO.doesTableExist(clazz))
             return null;
         Object newObj = null;
@@ -161,7 +161,7 @@ public class ORM {
         return newObj;
     }
 
-    public List<Object> readAll(Class<?> clazz) {
+    public static List<Object> readAll(Class<?> clazz) {
         if (!DAO.doesTableExist(clazz))
             return null;
         String query = "select * from \"" + clazz.getSimpleName() + "\"";
@@ -188,7 +188,7 @@ public class ORM {
     }
 
     //UPDATE
-    public boolean updateRecord(Object obj) {
+    public static boolean updateRecord(Object obj) {
         if (!ORM_Helper.isObjectValid(obj)) {
             return false;
         }
@@ -249,7 +249,7 @@ public class ORM {
     }
 
     //DELETE
-    public boolean deleteRecordPrimaryKey(Class<?> clazz, Object primaryKeyValue) {
+    public static boolean deleteRecordPrimaryKey(Class<?> clazz, Object primaryKeyValue) {
         if (!ORM_Helper.isClassValid(clazz))
             return false;
         if (!DAO.doesTableExist(clazz))
@@ -264,7 +264,7 @@ public class ORM {
         return true;
     }
 
-    public void dropTable(Class<?> clazz) {
+    public static void dropTable(Class<?> clazz) {
         if (DAO.doesTableExist(clazz))
             DAO.dropTable(clazz);
     }
