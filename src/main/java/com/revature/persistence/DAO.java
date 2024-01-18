@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DAO {
+
     /**
      * simple database query to create table if it doesnt already exist.
      * @param queryString query to create the table
@@ -160,7 +161,7 @@ public class DAO {
      */
     public static boolean doesTableExist(Class<?> clazz) {
         String tableName = clazz.getSimpleName();
-        String query = "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'project1' AND table_name = ?);";
+        String query = "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = ?);";
 
         try (Connection conn = ConnectionService.getInstance()) {
             PreparedStatement statement = conn.prepareStatement(query);
